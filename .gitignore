@@ -1,3 +1,9 @@
+# Project-specific
+backend/data/raw/
+backend/model/model.pkl
+.DS_Store
+.claude/settings.json
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
