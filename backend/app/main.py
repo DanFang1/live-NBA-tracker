@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from app.predictor import predict_pts
+from app.live import get_live_features
 
 app = FastAPI()
 
@@ -32,3 +33,12 @@ def health():
 def predict(request: PredictRequest):
     predicted_pts = predict_pts(request.model_dump())
     return {"predicted_pts": round(predicted_pts, 1)}
+
+
+@app.get("/live/{player_id}")
+def live_predict(player_id: int):
+    features = get_live_features(player_id)
+    if features is None:
+        return {"error": "Player not found in any live game today"}
+    predicted_pts = predict_pts(features)
+    return {"player_id": player_id, "predicted_pts": round(predicted_pts, 1)}
