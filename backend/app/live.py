@@ -7,7 +7,10 @@ _features_df = pd.read_csv(FEATURES_PATH)
 
 
 def get_live_game_id(player_id: int) -> str | None:
-    games = scoreboard.ScoreBoard().games.get_dict()
+    try:
+        games = scoreboard.ScoreBoard().games.get_dict()
+    except Exception:
+        return None
     for game in games:
         for team in ["homeTeam", "awayTeam"]:
             for player in game[team]["players"]:
