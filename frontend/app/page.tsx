@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const PLAYER_IDS: Record<string, number> = {
   "LeBron James": 2544,
@@ -17,6 +17,15 @@ export default function Home() {
   const [prediction, setPrediction] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [history, setHistory] = useState<{time: string, pts: number}[]>([]);
+
+  useEffect(() => {
+    if (!selectedPlayer) return;
+    const interval = setInterval(() => {
+      fetchPrediction(selectedPlayer);
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [selectedPlayer]);
 
   async function fetchPrediction(playerName: string) {
     const playerId = PLAYER_IDS[playerName];
@@ -34,6 +43,10 @@ export default function Home() {
         setPrediction(null);
       } else {
         setPrediction(data.predicted_pts);
+        setHistory(prev => [...prev, {
+          time: new Date().toLocaleTimeString(),
+          pts: data.predicted_pts
+        }]);
       }
     } catch {
       setError("Could not connect to backend");
@@ -54,6 +67,7 @@ export default function Home() {
           value={selectedPlayer}
           onChange={(e) => {
             setSelectedPlayer(e.target.value);
+            setHistory([]);
             fetchPrediction(e.target.value);
           }}
         >
