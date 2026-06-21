@@ -1,10 +1,9 @@
 import pandas as pd
-import numpy as np
 import os
 
 
 def load_data():
-    path = os.path.join(os.path.dirname(__file__), "raw", "all_players_2020_2025.csv")
+    path = os.path.join(os.path.dirname(__file__), "raw", "all_players_2020_2026.csv")
     df = pd.read_csv(path)
     df["GAME_DATE"] = pd.to_datetime(df["GAME_DATE"], format="mixed")
     df = df.sort_values(["PLAYER_ID", "GAME_DATE"]).reset_index(drop=True)
@@ -29,6 +28,7 @@ def add_game_context_features(df):
     )
     df["is_home"] = df["MATCHUP"].apply(lambda x: 0 if "@" in x else 1)
     df["opponent"] = df["MATCHUP"].apply(lambda x: x.split()[-1])
+    df["opponent_encoded"] = df["opponent"].astype("category").cat.codes
     return df
 
 

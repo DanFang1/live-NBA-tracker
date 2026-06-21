@@ -1,5 +1,4 @@
 import pandas as pd
-import numpy as np
 import os
 import joblib
 from xgboost import XGBRegressor
@@ -8,6 +7,8 @@ from sklearn.metrics import mean_absolute_error
 
 DATA_PATH = os.path.join(os.path.dirname(__file__), "../data/raw/features.csv")
 MODEL_PATH = os.path.join(os.path.dirname(__file__), "pts_model.joblib")
+MODEL_LOW_PATH = os.path.join(os.path.dirname(__file__), "pts_model_low.joblib")
+MODEL_HIGH_PATH = os.path.join(os.path.dirname(__file__), "pts_model_high.joblib")
 
 FEATURES = [
     "last5_avg_pts",
@@ -36,6 +37,26 @@ def time_split(df: pd.DataFrame, test_fraction: float = 0.2):
     return df.iloc[:cutoff], df.iloc[cutoff:]
 
 
+def train_quantile(df_train: pd.DataFrame, alpha: float) -> XGBRegressor:
+    X = df_train[FEATURES]
+    y = df_train[TARGET]
+
+    model = XGBRegressor(
+        objective="reg:quantileerror",
+        quantile_alpha=alpha,
+        n_estimators=400,
+        learning_rate=0.05,
+        max_depth=5,
+        subsample=0.8,
+        colsample_bytree=0.8,
+        random_state=42,
+        n_jobs=-1,
+    )
+
+    model.fit(X, y)
+    return model
+
+ 
 def train(df_train: pd.DataFrame) -> XGBRegressor:
     X = df_train[FEATURES]
     y = df_train[TARGET]
@@ -71,9 +92,16 @@ if __name__ == "__main__":
 
     print("Training XGBoost...")
     model = train(df_train)
-
     mae = evaluate(model, df_test)
     print(f"  Test MAE: {mae:.2f} pts")
-
     joblib.dump(model, MODEL_PATH)
     print(f"  Model saved → {MODEL_PATH}")
+
+    print("Training quantile models...")
+    model_low = train_quantile(df_train, alpha=0.1)
+    joblib.dump(model_low, MODEL_LOW_PATH)
+    print(f"  Low bound (p10) saved → {MODEL_LOW_PATH}")
+
+    model_high = train_quantile(df_train, alpha=0.9)
+    joblib.dump(model_high, MODEL_HIGH_PATH)
+    print(f"  High bound (p90) saved → {MODEL_HIGH_PATH}")

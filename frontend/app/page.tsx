@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import ScoreChart from "./components/ScoreChart";
+
 
 const PLAYER_IDS: Record<string, number> = {
   "LeBron James": 2544,
@@ -92,6 +94,8 @@ export default function Home() {
           <p className="text-gray-400 mt-2">projected points</p>
         </div>
       )}
+
+      <ScoreChart data={history} />
     </main>
   );
 }
