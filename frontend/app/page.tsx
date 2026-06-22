@@ -4,50 +4,55 @@ import { useState, useEffect } from "react";
 import ScoreChart from "./components/ScoreChart";
 
 
-const PLAYER_IDS: Record<string, number> = {
-  "LeBron James": 2544,
-  "Stephen Curry": 201939,
-  "Kevin Durant": 201142,
-  "Giannis Antetokounmpo": 203507,
-  "Luka Doncic": 1629029,
-  "Jayson Tatum": 1628369,
-};
-
-
 export default function Home() {
-  const [selectedPlayer, setSelectedPlayer] = useState<string>("");
+  const [players, setPlayers] = useState<{id: number, name: string}[]>([]);
+  const [selectedPlayerId, setSelectedPlayerId] = useState<number | null>(null);
   const [prediction, setPrediction] = useState<number | null>(null);
+  const [ptsLow, setPtsLow] = useState<number | null>(null);
+  const [ptsHigh, setPtsHigh] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [history, setHistory] = useState<{time: string, pts: number}[]>([]);
+  const [history, setHistory] = useState<{time: string, pts: number, low: number, high: number}[]>([]);
 
   useEffect(() => {
-    if (!selectedPlayer) return;
+    fetch("${process.env.NEXT_PUBLIC_API_URL}/players")
+      .then(res => res.json())
+      .then(data => setPlayers(data))
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (!selectedPlayerId) return;
     const interval = setInterval(() => {
-      fetchPrediction(selectedPlayer);
+      fetchPrediction(selectedPlayerId);
     }, 30000);
     return () => clearInterval(interval);
-  }, [selectedPlayer]);
+  }, [selectedPlayerId]);
 
-  async function fetchPrediction(playerName: string) {
-    const playerId = PLAYER_IDS[playerName];
-    if (!playerId) return;
+  const selectedPlayerName = players.find(p => p.id === selectedPlayerId)?.name ?? "";
 
+  async function fetchPrediction(playerId: number) {
     setLoading(true);
     setError(null);
 
     try {
-      const res = await fetch(`http://localhost:8000/live/${playerId}`);
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/live/${playerId}`);
       const data = await res.json();
 
       if (data.error) {
         setError(data.error);
         setPrediction(null);
+        setPtsLow(null);
+        setPtsHigh(null);
       } else {
         setPrediction(data.predicted_pts);
+        setPtsLow(data.pts_low);
+        setPtsHigh(data.pts_high);
         setHistory(prev => [...prev, {
           time: new Date().toLocaleTimeString(),
-          pts: data.predicted_pts
+          pts: data.predicted_pts,
+          low: data.pts_low,
+          high: data.pts_high,
         }]);
       }
     } catch {
@@ -66,19 +71,23 @@ export default function Home() {
       <div className="flex gap-3 mb-8">
         <select
           className="flex-1 bg-gray-800 rounded-lg px-4 py-2 text-white"
-          value={selectedPlayer}
+          value={selectedPlayerId ?? ""}
           onChange={(e) => {
-            setSelectedPlayer(e.target.value);
+            const id = Number(e.target.value);
+            setSelectedPlayerId(id);
             setHistory([]);
-            fetchPrediction(e.target.value);
+            setPtsLow(null);
+            setPtsHigh(null);
+            fetchPrediction(id);
           }}
         >
           <option value="">Select a player...</option>
-          {Object.keys(PLAYER_IDS).map((name) => (
-            <option key={name} value={name}>{name}</option>
+          {players.map((player) => (
+            <option key={player.id} value={player.id}>{player.name}</option>
           ))}
         </select>
       </div>
+
       {loading && (
         <p className="text-center text-gray-400">Loading...</p>
       )}
@@ -89,9 +98,14 @@ export default function Home() {
 
       {prediction !== null && !loading && (
         <div className="bg-gray-800 rounded-xl p-8 text-center">
-          <p className="text-gray-400 mb-2">{selectedPlayer}</p>
+          <p className="text-gray-400 mb-2">{selectedPlayerName}</p>
           <p className="text-6xl font-bold text-green-400">{prediction}</p>
           <p className="text-gray-400 mt-2">projected points</p>
+          {ptsLow !== null && ptsHigh !== null && (
+            <p className="text-gray-500 mt-3 text-sm">
+              {ptsLow} – {ptsHigh} pts &nbsp;·&nbsp; 80% range
+            </p>
+          )}
         </div>
       )}
 

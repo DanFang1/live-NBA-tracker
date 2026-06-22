@@ -2,9 +2,10 @@ import os
 import joblib
 import pandas as pd
 
-MODEL_PATH = os.path.join(os.path.dirname(__file__), "../model/pts_model.joblib")
-
-model = joblib.load(MODEL_PATH)
+_dir = os.path.dirname(__file__)
+_model = joblib.load(os.path.join(_dir, "../model/pts_model.joblib"))
+_model_low = joblib.load(os.path.join(_dir, "../model/pts_model_low.joblib"))
+_model_high = joblib.load(os.path.join(_dir, "../model/pts_model_high.joblib"))
 
 FEATURES = [
     "last5_avg_pts",
@@ -17,6 +18,16 @@ FEATURES = [
     "opponent_encoded",
 ]
 
+
 def predict_pts(features: dict) -> float:
-    df = pd.DataFrame([features])[FEATURES]
-    return float(model.predict(df)[0])
+    X = pd.DataFrame([features])[FEATURES]
+    return float(_model.predict(X)[0])
+
+
+def predict_with_interval(features: dict) -> dict:
+    X = pd.DataFrame([features])[FEATURES]
+    return {
+        "predicted_pts": round(float(_model.predict(X)[0]), 1),
+        "pts_low": round(float(_model_low.predict(X)[0]), 1),
+        "pts_high": round(float(_model_high.predict(X)[0]), 1),
+    }

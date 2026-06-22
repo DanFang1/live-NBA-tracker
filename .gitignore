@@ -1,8 +1,9 @@
 # Project-specific
-backend/data/raw/
+backend/data/raw/all_players_*.csv
 backend/model/model.pkl
 .DS_Store
 .claude/settings.json
+.env.local
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
