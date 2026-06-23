@@ -15,7 +15,7 @@ export default function Home() {
   const [history, setHistory] = useState<{time: string, pts: number, low: number, high: number}[]>([]);
 
   useEffect(() => {
-    fetch("${process.env.NEXT_PUBLIC_API_URL}/players")
+    fetch("/backend/players")
       .then(res => res.json())
       .then(data => setPlayers(data))
       .catch(() => {});
@@ -36,7 +36,7 @@ export default function Home() {
     setError(null);
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/live/${playerId}`);
+      const res = await fetch(`/backend/live/${playerId}`);
       const data = await res.json();
 
       if (data.error) {
