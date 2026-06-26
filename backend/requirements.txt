@@ -7,3 +7,5 @@ joblib==1.5.3
 pandas==3.0.3
 numpy==2.4.1
 pydantic==2.13.4
+redis==5.2.1
+apscheduler==3.10.4

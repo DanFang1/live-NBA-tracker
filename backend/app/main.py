@@ -1,12 +1,37 @@
 import os
+import json
+import redis
+from contextlib import asynccontextmanager
+from apscheduler.schedulers.background import BackgroundScheduler
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from app.predictor import predict_pts, predict_with_interval
 from app.live import get_live_features, _features_df
+from app.ingestion import fetch_and_cache_all_live
 from nba_api.stats.static import players as nba_players
 
-app = FastAPI()
+redis_client = None
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    global redis_client
+    redis_url = os.environ.get("REDIS_URL")
+    if redis_url:
+        redis_client = redis.from_url(redis_url, decode_responses=True)
+        scheduler = BackgroundScheduler()
+        scheduler.add_job(
+            fetch_and_cache_all_live,
+            "interval",
+            seconds=30,
+            args=[redis_client],
+        )
+        scheduler.start()
+    yield
+    if redis_client:
+        redis_client.close()
+
+app = FastAPI(lifespan=lifespan)
 
 _origins = os.environ.get("ALLOWED_ORIGINS", "http://localhost:3000").split(",")
 
