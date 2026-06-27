@@ -23,28 +23,22 @@ export default function Home() {
 
   useEffect(() => {
     if (!selectedPlayerId) return;
-    const interval = setInterval(() => {
-      fetchPrediction(selectedPlayerId);
-    }, 30000);
-    return () => clearInterval(interval);
-  }, [selectedPlayerId]);
 
-  const selectedPlayerName = players.find(p => p.id === selectedPlayerId)?.name ?? "";
-
-  async function fetchPrediction(playerId: number) {
     setLoading(true);
     setError(null);
 
-    try {
-      const res = await fetch(`/api/live/${playerId}`);
-      const data = await res.json();
+    const es = new EventSource(`/api/live-stream/${selectedPlayerId}`);
 
+    es.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      setLoading(false);
       if (data.error) {
         setError(data.error);
         setPrediction(null);
         setPtsLow(null);
         setPtsHigh(null);
       } else {
+        setError(null);
         setPrediction(data.predicted_pts);
         setPtsLow(data.pts_low);
         setPtsHigh(data.pts_high);
@@ -55,12 +49,17 @@ export default function Home() {
           high: data.pts_high,
         }]);
       }
-    } catch {
-      setError("Could not connect to backend");
-    } finally {
+    };
+
+    es.onerror = () => {
+      setError("Connection lost");
       setLoading(false);
-    }
-  }
+    };
+
+    return () => es.close();
+  }, [selectedPlayerId]);
+
+  const selectedPlayerName = players.find(p => p.id === selectedPlayerId)?.name ?? "";
 
   return (
     <main className="max-w-xl mx-auto px-4 py-16">
@@ -76,9 +75,9 @@ export default function Home() {
             const id = Number(e.target.value);
             setSelectedPlayerId(id);
             setHistory([]);
+            setPrediction(null);
             setPtsLow(null);
             setPtsHigh(null);
-            fetchPrediction(id);
           }}
         >
           <option value="">Select a player...</option>

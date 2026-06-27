@@ -78,8 +78,14 @@ def predict(request: PredictRequest):
 
 @app.get("/live/{player_id}")
 def live_predict(player_id: int):
-    features = get_live_features(player_id)
-    if features is None:
+    if redis_client is None:
+        features = get_live_features(player_id)
+        if features is None:
+            return {"error": "Player not found in any live game today"}
+        result = predict_with_interval(features)
+        return {"player_id": player_id, **result}
+
+    cached = redis_client.get(f"live:{player_id}")
+    if cached is None:
         return {"error": "Player not found in any live game today"}
-    result = predict_with_interval(features)
-    return {"player_id": player_id, **result}
+    return json.loads(cached)
