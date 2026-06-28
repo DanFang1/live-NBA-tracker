@@ -23,7 +23,7 @@ async def lifespan(app: FastAPI):
         scheduler.add_job(
             fetch_and_cache_all_live,
             "interval",
-            seconds=30,
+            seconds=60,
             args=[redis_client],
         )
         scheduler.start()

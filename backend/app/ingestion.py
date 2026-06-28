@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 def fetch_and_cache_all_live(redis_client):
     try:
-        board = scoreboardv2.ScoreboardV2(game_date=date.today())
+        board = scoreboardv2.ScoreboardV2(game_date=date.today(), timeout=60)
         game_header = board.game_header.get_data_frame()
     except Exception as e:
         logger.warning(f"Scoreboard fetch failed: {e}")
@@ -29,7 +29,7 @@ def fetch_and_cache_all_live(redis_client):
     player_ids_in_live_games = set()
     for game_id in live_game_ids:
         try:
-            box = boxscoretraditionalv2.BoxScoreTraditionalV2(game_id=game_id)
+            box = boxscoretraditionalv2.BoxScoreTraditionalV2(game_id=game_id, timeout=60)
             df = box.player_stats.get_data_frame()
             player_ids_in_live_games.update(df["PLAYER_ID"].tolist())
         except Exception as e:
