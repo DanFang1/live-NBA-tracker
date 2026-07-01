@@ -1,4 +1,4 @@
-# Live NBA Props Predictor
+# Live NBA Stats Predictor
 
 Real-time NBA player stat predictor for in-game sports betting decisions. Select any of the top 150 NBA players and get a live predicted final points total with an 80% confidence interval — updated every 60 seconds during live games.
 
